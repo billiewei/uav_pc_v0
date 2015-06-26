@@ -1,123 +1,172 @@
+/****************************************************************************
+**
+** Copyright (C) 2012 Denis Shienkov <denis.shienkov@gmail.com>
+** Copyright (C) 2012 Laszlo Papp <lpapp@kde.org>
+** Contact: http://www.qt-project.org/legal
+**
+** This file is part of the QtSerialPort module of the Qt Toolkit.
+**
+** $QT_BEGIN_LICENSE:LGPL21$
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia. For licensing terms and
+** conditions see http://qt.digia.com/licensing. For further information
+** use the contact form at http://qt.digia.com/contact-us.
+**
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 or version 3 as published by the Free
+** Software Foundation and appearing in the file LICENSE.LGPLv21 and
+** LICENSE.LGPLv3 included in the packaging of this file. Please review the
+** following information to ensure the GNU Lesser General Public License
+** requirements will be met: https://www.gnu.org/licenses/lgpl.html and
+** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights. These rights are described in the Digia Qt LGPL Exception
+** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
+**
+** $QT_END_LICENSE$
+**
+****************************************************************************/
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QtCore/QtGlobal>
+
 #include <QMainWindow>
-#include <QAction>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QGridLayout>
+#include <QComboBox>
 #include <QSlider>
 #include <QLabel>
-#include <QKeyEvent>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QSpinBox>
 #include <QPushButton>
-#include <QMenuBar>
-#include <QPixmap>
-#include <QPicture>
-#include <QTabWidget>
+#include <QRadioButton>
 
-
-#include <QHBoxLayout>  // horizontal layout
-#include <QVBoxLayout>  // vertical layout
-#include <QGroupBox>
-#include <QGridLayout>
-
-#include <QTime>
 #include <QtSerialPort/QSerialPort>
-#include <QtSerialPort/QSerialPortInfo>
 
 QT_BEGIN_NAMESPACE
-class QMainWindow;
-
-class QLabel;
-class QSlider;
-class QKeyEvent;
-class QLineEdit;
-class QComboBox;
-class QSpinBox;
-class QPushButton;
-class QMenuBar;
-class QPixmap;
-class QPicture;
-
-class QHBoxLayout;  // horizontal layout
-class QVBoxLayout;  // vertical layout
-class QGroupBox;
-class QGridLayout;
-
-class QTime;
-
-QT_END_NAMESPACE
-
-const int BAUD1200 = 1200;
-const int BAUD2400 = 2400;
-const int BAUD4800 = 4800;
-const int BAUD9600 = 9600;
-const int BAUD19200 = 19200;
-const int BAUD38400 = 38400;
-const int BAUD57600 = 57600;
-const int BAUD115200 = 115200;
-const int BAUD128000 = 128000;
-const int BAUD256000 = 256000;
-const int BAUD921600 = 921600;
-const int BAUD1000000 = 1000000;
-const int BAUD1500000 = 1500000;
-const int BAUD2000000 = 2000000;
-const int BAUD2500000 = 2500000;
-const int BAUD3000000 = 3000000;
-const int BAUD3500000 = 3500000;
-const int BAUD4000000 = 4000000;
 
 namespace Ui {
 class MainWindow;
 }
 
-class MainWindow: public QMainWindow
+QT_END_NAMESPACE
+
+class Console;
+class SettingsDialog;
+
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = 0);
+    enum FLIGHT_MODE {RETURN = 0, MANUAL = 1, ALTCTL = 2, POSCTL = 3, MISSION = 4, LOITER = 5};
     ~MainWindow();
 
-    int throttle_control;
-    int yaw_control;
-    int pitch_control;
-    int roll_control;
+private slots:
+    /** Serial port dialog */
+    void openSerialPort();
+    void closeSerialPort();
+    void about();
+    void writeData(const QByteArray &data);
+    void readData();
 
-public slots:
-    void onSetThrottle(int t);
-    void onSetYaw(int y);
-    void onSetPitch(int p);
-    void onSetRoll(int r);
+    void handleError(QSerialPort::SerialPortError error);
 
-protected:
-    bool fullScreen;
- /**   void keyPressEvent(QKeyEvent *e); */
+    /** Manual control sliders */
+   void onSetThrottle(int t);
+   void onSetYaw(int y);
+   void onSetPitch(int p);
+   void onSetRoll(int r);
+
+   /** Arming state */
+   void onSetArming();
+
+   /** Flight mode swtich */
+   void onSetFlightMode();
+
+   /** Safety Mode */
+   void onTriggerSafety();
+
+
+private:
+    void initActionsConnections();
+
+    void createInfoGroupBox();
+    void createMediaGroupBox();
+    void createControlSlidersGroupBox();
+    void createMapGroupBox();
+    void createFlightModeControlGroupBox();
+
+    void createArmingGroupBox();
+    void createWaypointGroupBox();
+    void createFlightModeGroupBox();
 
 private:
     Ui::MainWindow *ui;
 
- //   QMenuBar* menuBar;  
+    /** Console */
+    Console *console;
+    SettingsDialog *settings;
+    QSerialPort *serial;
+
+    /** UAV Control main window */
+    QWidget* widget;
+
     QGroupBox* infoGroupBox;
+    QGroupBox* mediaGroupBox;
     QGroupBox* controlSlidersGroupBox;
     QGroupBox* mapGroupBox;
-    QGroupBox* serialPortGroupBox;
-    QGroupBox* commandTerminalGroupBox;
+    QGroupBox* flightModeControlGroupBox;
+    QGroupBox* consoleGroupBox;
 
- //   QAction* exitAction;
+    /** Info: real-time feedback from the UAV */
     QLabel* xPosLabel;
     QLabel* yPosLabel;
-    QLabel* heightLabel;
+    QLabel* zPosLabel;
+    int xPosValue;
+    int yPosValue;
+    int zPosValue;
 
-    QLabel* xPosValue;
-    QLabel* yPosValue;
-    QLabel* heightValue;
+    QLabel* xAcce;
+    QLabel* yAcce;
+    QLabel* zAcce;
+    int xAcceValue;
+    int yAcceValue;
+    int zAcceValue;
 
-    QTabWidget* tabWidget;
-    QLabel* map1;
-    QLabel* map2;
-    QPixmap* pixmap1;
-    QPixmap* pixmap2;
+    QLabel* xGyro;
+    QLabel* yGyro;
+    QLabel* zGyro;
+    int xGyroValue;
+    int yGyroValue;
+    int zGyroValue;
+
+    QLabel* xMag;
+    QLabel* yMag;
+    QLabel* zMag;
+    int xMagValue;
+    int yMagValue;
+    int zMagValue;
+
+    /** Media */
+    QLabel* songListLabel;
+    QComboBox* songListBox;
+    QPushButton* toggleButton;
+
+
+    /** Manual control sliders */
+    int throttle_control;
+    int yaw_control;
+    int pitch_control;
+    int roll_control;
 
     QSlider* throttleSlider;
     QSlider* yawSlider;
@@ -134,30 +183,53 @@ private:
     QLabel* pitchValue;
     QLabel* rollValue;
 
-    QString portName;
-//    QSerialPort* port;
+    /** Tab and map */
+    QTabWidget* tabWidget;
+    QLabel* map1;
+    QLabel* map2;
 
-    QLabel* serialPortLabel;
-    QComboBox* serialPortComboBox;
+    /** Flight Mode Control */
+    QGroupBox* armingGroupBox;
+    QGroupBox* waypointGroupBox;
+    QGroupBox* flightModeGroupBox;
 
-    QLabel* baudRateLabel;
-    QComboBox* baudRateBox;
+ //   FLIGHT_MODE flight_mode;
 
-    QLabel* waitResponseLabel;
-    QSpinBox* waitResponseSpinBox;
+    /** Inside armingGroupBox*/
+    QRadioButton* disarmRadioButton;
+    QRadioButton* armRadioButton;
+    QLabel* armingStateLabel;
 
-    QLabel* parityLabel;
-    QComboBox* parityBox;
+    /** Inside waypointGroupBox*/
+    /** Now nothing */
 
-    QPushButton *runButton;
+    /** Inside flightModeGroupBox*/
+    FLIGHT_MODE flight_mode;
+    QGroupBox* returnSwitch;
+    QHBoxLayout* returnLayout;
+    QRadioButton* returnOn;
+    QRadioButton* returnOff;
 
-    void createMenu();
-    void createInfoGroupBox();
-    void createMapGroupBox();
-    void createControlSlidersGroupBox();
-    void createSerialPortGroupBox();
-    void createCommandTerminalGroupBox();
+    QGroupBox* modeSwitch;
+    QHBoxLayout* modeLayout;
+    QRadioButton* manualRadioButton;
+    QRadioButton* assistRadioButton;
+    QRadioButton* autoRadioButton;
+
+    QGroupBox* assistSwitch;
+    QHBoxLayout* assistLayout;
+    QRadioButton* altctl;
+    QRadioButton* posctl;
+
+    QGroupBox* autoSwitch;
+    QHBoxLayout* autoLayout;
+    QRadioButton* mission;
+    QRadioButton* loiter;
+
+    QLabel* flightModeLabel;
+
+
 
 };
 
-#endif //MAINWINDOW_H
+#endif // MAINWINDOW_H
