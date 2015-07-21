@@ -38,17 +38,17 @@
 #include <QtCore/QtGlobal>
 
 #include <QMainWindow>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
+#include <QGroupBox>
 #include <QComboBox>
 #include <QSlider>
 #include <QLabel>
 #include <QPushButton>
 #include <QRadioButton>
 
-#include <QtSerialPort/QSerialPort>
+#include "mavserialport.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -60,6 +60,7 @@ QT_END_NAMESPACE
 
 class Console;
 class SettingsDialog;
+class MavSerialPort;
 
 class MainWindow : public QMainWindow
 {
@@ -67,8 +68,13 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = 0);
-    enum FLIGHT_MODE {RETURN = 0, MANUAL = 1, ALTCTL = 2, POSCTL = 3, MISSION = 4, LOITER = 5};
+    enum FLIGHT_MODE {RETURN = 0, MANUAL = 1, ALTCTL = 2, POSCTL = 3, MISSION = 4, LOITER = 5} flight_mode;
+    enum ARM_STATE {DISARMED = 0, ARMED = 1} arm_state;
     ~MainWindow();
+
+signals:
+    void armingStateChanged(ARM_STATE s);
+    void flightModeChanged(FLIGHT_MODE m);
 
 private slots:
     /** Serial port dialog */
@@ -79,6 +85,14 @@ private slots:
     void readData();
 
     void handleError(QSerialPort::SerialPortError error);
+
+    /** Update Info */
+    void onUpdateTime();
+    void onUpdateLocal();
+    void onUpdateGlobal();
+    void onUpdateBattery();
+    void onUpdateIMU();
+    void onUpdateAttitude();
 
     /** Manual control sliders */
    void onSetThrottle(int t);
@@ -96,71 +110,106 @@ private slots:
    void onTriggerSafety();
 
 
-private:
-    void initActionsConnections();
 
+private:
+    /** communication */
+    void initActionsConnections();
+    void initSerialConnections();
+    void initUpdateConnections();
+    void initCommandConnections();
+
+    /** inside MainWindow */
     void createInfoGroupBox();
-    void createMediaGroupBox();
     void createControlSlidersGroupBox();
     void createMapGroupBox();
     void createFlightModeControlGroupBox();
 
+    /** inside info group */
+    void createTimeGroupBox();
+    void createLocalGroupBox();
+    void createGlobalGroupBox();
+    void createMediaGroupBox();
+    void createBatteryGroupBox();
+    void createIMUGroupBox();
+    void createAttitudeGroupBox();
+
+    /** inside flight mode control */
     void createArmingGroupBox();
     void createWaypointGroupBox();
     void createFlightModeGroupBox();
-
 private:
     Ui::MainWindow *ui;
 
     /** Console */
-    Console *console;
-    SettingsDialog *settings;
-    QSerialPort *serial;
+    Console* console;
+    SettingsDialog* settings;
+    MavSerialPort* serial;
 
     /** UAV Control main window */
     QWidget* widget;
 
     QGroupBox* infoGroupBox;
-    QGroupBox* mediaGroupBox;
     QGroupBox* controlSlidersGroupBox;
     QGroupBox* mapGroupBox;
     QGroupBox* flightModeControlGroupBox;
     QGroupBox* consoleGroupBox;
 
     /** Info: real-time feedback from the UAV */
+    QGroupBox* timeGroupBox;
+    QGroupBox* localGroupBox;
+    QGroupBox* globalGroupBox;
+    QGroupBox* mediaGroupBox;
+    QGroupBox* batteryGroupBox;
+    QGroupBox* IMUGroupBox;
+    QGroupBox* attitudeGroupBox;
+
+    /** inside timeGroupBox */
+    QLabel* timeLabel;//time since boot(ms)
+
+    /** inside localGroupBox */
     QLabel* xPosLabel;
     QLabel* yPosLabel;
     QLabel* zPosLabel;
-    int xPosValue;
-    int yPosValue;
-    int zPosValue;
+    QLabel* vxLabel;
+    QLabel* vyLabel;
+    QLabel* vzLabel;
 
-    QLabel* xAcce;
-    QLabel* yAcce;
-    QLabel* zAcce;
-    int xAcceValue;
-    int yAcceValue;
-    int zAcceValue;
+    /** inside globalGroupBox */
+    QLabel* latitudeLabel;
+    QLabel* longitudeLabel;
+    QLabel* altitudeLabel;
 
-    QLabel* xGyro;
-    QLabel* yGyro;
-    QLabel* zGyro;
-    int xGyroValue;
-    int yGyroValue;
-    int zGyroValue;
+    /** inside IMUgroupBox */
+    QLabel* xAcceLabel;
+    QLabel* yAcceLabel;
+    QLabel* zAcceLabel;
+    QLabel* xGyroLabel;
+    QLabel* yGyroLabel;
+    QLabel* zGyroLabel;
+    QLabel* xMagLabel;
+    QLabel* yMagLabel;
+    QLabel* zMagLabel;
+    QLabel* pressure_altitudeLabel;
+    QLabel* temperatureLabel;
 
-    QLabel* xMag;
-    QLabel* yMag;
-    QLabel* zMag;
-    int xMagValue;
-    int yMagValue;
-    int zMagValue;
+    /** inside batteryGroupBox */
+    //add a low batter alert
+    QLabel* voltageLabel;
+    QLabel* remainingLabel;
 
-    /** Media */
+    /** inside altitudeGroupBox */
+    //add a low batter alert
+    QLabel* rollangleLabel;
+    QLabel* pitchangleLabel;
+    QLabel* yawangleLabel;
+    QLabel* rollspeedLabel;
+    QLabel* pitchspeedLabel;
+    QLabel* yawspeedLabel;
+
+    /** inside mediaGroupBox */
     QLabel* songListLabel;
     QComboBox* songListBox;
     QPushButton* toggleButton;
-
 
     /** Manual control sliders */
     int throttle_control;
@@ -193,8 +242,6 @@ private:
     QGroupBox* waypointGroupBox;
     QGroupBox* flightModeGroupBox;
 
- //   FLIGHT_MODE flight_mode;
-
     /** Inside armingGroupBox*/
     QRadioButton* disarmRadioButton;
     QRadioButton* armRadioButton;
@@ -204,7 +251,6 @@ private:
     /** Now nothing */
 
     /** Inside flightModeGroupBox*/
-    FLIGHT_MODE flight_mode;
     QGroupBox* returnSwitch;
     QHBoxLayout* returnLayout;
     QRadioButton* returnOn;
@@ -227,9 +273,6 @@ private:
     QRadioButton* loiter;
 
     QLabel* flightModeLabel;
-
-
-
 };
 
 #endif // MAINWINDOW_H
